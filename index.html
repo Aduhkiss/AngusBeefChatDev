@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AngusBeef Chat</title>
+
+  <!-- Material Design Theming -->
+  <link rel="stylesheet" href="https://code.getmdl.io/1.1.3/material.orange-indigo.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <script defer src="https://code.getmdl.io/1.1.3/material.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.4/socket.io.js"></script>
+  <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+
+  <link rel="stylesheet" href="main.css">
+  
+  <style>
+  .messageInput {
+    width: 50%;
+    }
+  </style>
+
+  <!-- Import and configure the Firebase SDK -->
+  <!-- These scripts are made available when the app is served or deployed on Firebase Hosting -->
+  <!-- If you do not serve/host your project using Firebase Hosting see https://firebase.google.com/docs/web/setup -->
+<script src="https://www.gstatic.com/firebasejs/4.9.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.9.0/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.9.0/firebase-database.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.9.0/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.9.0/firebase-messaging.js"></script>
+
+  <script src="https://www.gstatic.com/firebasejs/4.9.0/firebase.js"></script>
+<script>
+  // Initialize Firebase
+  var config = {
+    apiKey: "AIzaSyBpiH6eLqAYEbqo_3lvJQihHiRBJAbFDP0",
+    authDomain: "angusbeefnetwork.firebaseapp.com",
+    databaseURL: "https://angusbeefnetwork.firebaseio.com",
+    projectId: "angusbeefnetwork",
+    storageBucket: "angusbeefnetwork.appspot.com",
+    messagingSenderId: "785247494767"
+  };
+  firebase.initializeApp(config);
+  var myChannel = "default";
+  
+var userStore = firebase.auth().currentUser;
+</script>
+
+  <script type="text/javascript">
+    // Configuration Values for the entire thing
+    var allowSignup = true;
+	
+	
+	// Stuff
+	var userActive;
+    
+    /**
+     * Handles the sign in button press.
+     */
+    function toggleSignIn() {
+      if (firebase.auth().currentUser) {
+        // [START signout]
+        firebase.auth().signOut();
+        // [END signout]
+      } else {
+        var email = document.getElementById('email').value;
+        var password = document.getElementById('password').value;
+        if (email.length < 4) {
+          alert('Please enter an email address.');
+          return;
+        }
+        if (password.length < 4) {
+          alert('Please enter a password.');
+          return;
+        }
+        // Sign in with email and pass.
+        // [START authwithemail]
+        firebase.auth().signInWithEmailAndPassword(email, password).catch(function(error) {
+          // Handle Errors here.
+          var errorCode = error.code;
+          var errorMessage = error.message;
+          // [START_EXCLUDE]
+          if (errorCode === 'auth/wrong-password') {
+            alert('Wrong password.');
+          }
+          if(errorCode === 'auth/user-not-found') {
+            alert("Authentication> Sorry, but I couldn't find that user account!");
+          }
+          else {
+            alert(errorMessage);
+          }
+          console.log(error);
+          document.getElementById('quickstart-sign-in').disabled = false;
+          // [END_EXCLUDE]
+        });
+        // [END authwithemail]
+      }
+      document.getElementById('quickstart-sign-in').disabled = true;
+    }
+    /**
+     * Handles the sign up button press.
+     */
+    function handleSignUp() {
+      if(allowSignup == false) {
+        alert("Config> Account Signup is disabled!");
+        return;
+      }
+      var email = document.getElementById('email').value;
+      var password = document.getElementById('password').value;
+      if (email.length < 4) {
+        alert('Please enter an email address.');
+        return;
+      }
+      if (password.length < 4) {
+        alert('Please enter a password.');
+        return;
+      }
+      // Sign in with email and pass.
+      // [START createwithemail]
+      firebase.auth().createUserWithEmailAndPassword(email, password).catch(function(error) {
+        // Handle Errors here.
+        var errorCode = error.code;
+        var errorMessage = error.message;
+        // [START_EXCLUDE]
+        if (errorCode == 'auth/weak-password') {
+          alert('Authentication> The password is too weak.');
+        } else {
+          alert("Authentication> Error! " + errorMessage + " Error Code: " + errorCode);
+        }
+        console.log("Authentication> Error! " + errorMessage + " Error Code: " + errorCode);
+        // [END_EXCLUDE]
+      });
+      // [END createwithemail]
+    }
+    /**
+     * Sends an email verification to the user.
+     */
+    function sendEmailVerification() {
+      // [START sendemailverification]
+      firebase.auth().currentUser.sendEmailVerification().then(function() {
+        // Email Verification sent!
+        // [START_EXCLUDE]
+        alert('Email Verification Sent!');
+        // [END_EXCLUDE]
+      });
+      // [END sendemailverification]
+    }
+    function sendPasswordReset() {
+      var email = document.getElementById('email').value;
+      // [START sendpasswordemail]
+      firebase.auth().sendPasswordResetEmail(email).then(function() {
+        // Password Reset Email Sent!
+        // [START_EXCLUDE]
+        alert('Password Reset Email Sent!');
+        // [END_EXCLUDE]
+      }).catch(function(error) {
+        // Handle Errors here.
+        var errorCode = error.code;
+        var errorMessage = error.message;
+        // [START_EXCLUDE]
+        if (errorCode == 'auth/invalid-email') {
+          alert(errorMessage);
+        } else if (errorCode == 'auth/user-not-found') {
+          alert(errorMessage);
+        }
+        console.log(error);
+        // [END_EXCLUDE]
+      });
+      // [END sendpasswordemail];
+    }
+    
+    
+
+    window.setInterval(function(){
+      // Stuff
+      document.getElementById('main-header').innerHTML = "My Name: " + usrA + " - My Rank: " + usrB + " - My Channel: " + myChannel;
+    }, 1000);
+
+
+	
+	function signUserOut() {
+		firebase.auth().signOut();
+		document.getElementById('chat-core').style.visibility='hidden';
+		document.getElementById('auth-area').style.visibility='visible';
+		document.getElementById('chat-logout-btn').style.visibility='hidden';
+    $('#messages').empty();
+	}
+	
+    /**
+     * initApp handles setting up UI event listeners and registering Firebase auth listeners:
+     *  - firebase.auth().onAuthStateChanged: This listener is called when the user is signed in or
+     *    out, and that is where we update the UI.
+     */
+    function initApp() {
+      // Listening for auth state changes.
+      // [START authstatelistener]
+      firebase.auth().onAuthStateChanged(function(user) {
+        // [START_EXCLUDE silent]
+        document.getElementById('quickstart-verify-email').disabled = true;
+        // [END_EXCLUDE]
+        if (user) {
+          // User is signed in.
+          var displayName = user.displayName;
+          var email = user.email;
+          var emailVerified = user.emailVerified;
+          var photoURL = user.photoURL;
+          var isAnonymous = user.isAnonymous;
+          var uid = user.uid;
+          var providerData = user.providerData;
+		      uidStore = user.id;
+		  
+          // [START_EXCLUDE]
+          document.getElementById('quickstart-sign-in-status').textContent = 'Signed in';
+          document.getElementById('quickstart-sign-in').textContent = 'Sign out';
+          document.getElementById('quickstart-account-details').textContent = '';
+          if (!emailVerified) {
+            document.getElementById('quickstart-verify-email').disabled = false;
+          }
+          // [END_EXCLUDE]
+		  
+		  // Insert code to activate the Chat
+		  document.getElementById('chat-core').style.visibility='visible';
+		  document.getElementById('auth-area').style.visibility='hidden';
+		  document.getElementById('chat-logout-btn').style.visibility='visible';
+		  
+		  // Check if the user has data
+		  var accountE = firebase.database().ref('users/' + uid + '/enabled');
+		  accountE.on('value', function(snapshot) {
+			  //console.log("Debug> 2 is: " + snapshot.val());
+			  if(snapshot.val() == "yes") {
+				console.log("Login> User Data found for account: " + uid);
+        console.log("Login> Trying to set uidStore to the UID Value...");
+        uidStore = uid;
+				userActive = true;
+			  }
+			  else {
+				console.log("Login> User data not found for account! Creating now...");
+				userActive = false;
+				setupUserData(uid);
+			  }
+		  });
+          
+              ////
+    var getterV = firebase.database().ref('users/' + firebase.auth().currentUser.uid + '/username');
+    getterV.on('value', function(snapshot) {
+      usrA = snapshot.val();
+    });
+    ////
+    var getterVV = firebase.database().ref('users/' + firebase.auth().currentUser.uid + '/playerrank');
+    getterVV.on('value', function(snapshot) {
+      usrB = snapshot.val();
+    });
+    ////
+		  $('#messages').empty();
+        
+        } else {
+			signUserOut();
+          // User is signed out.
+          // [START_EXCLUDE]
+		  document.getElementById('chat-logout-btn').style.visibility='hidden';
+          document.getElementById('quickstart-sign-in-status').textContent = 'Signed out';
+          document.getElementById('quickstart-sign-in').textContent = 'Sign in';
+          document.getElementById('quickstart-account-details').textContent = '';
+          
+          // [END_EXCLUDE]
+        }
+        // [START_EXCLUDE silent]
+        document.getElementById('quickstart-sign-in').disabled = false;
+        // [END_EXCLUDE]
+      });
+      // [END authstatelistener]
+      document.getElementById('quickstart-sign-in').addEventListener('click', toggleSignIn, false);
+      document.getElementById('quickstart-sign-up').addEventListener('click', handleSignUp, false);
+      document.getElementById('quickstart-verify-email').addEventListener('click', sendEmailVerification, false);
+      document.getElementById('quickstart-password-reset').addEventListener('click', sendPasswordReset, false);
+    }
+    window.onload = function() {
+      $('#messages').empty();
+      initApp();
+    };
+  </script>
+</head>
+<body>
+<script>
+  function changeChannel() {
+    var channelGiven = document.getElementById('channel-change').value
+    if(channelGiven == null || channelGiven == "") {
+      alert("Channels> You must give a channel to go to!");
+      return;
+    }
+    myChannel = channelGiven;
+    console.log("Channels> Successfully switched to channel " + myChannel + "!");
+    alert("Channels> Successfully switched to channel " + myChannel + "!");
+  }
+  
+  function sendRaw(message) {
+    // usrA is your username
+    socket.emit('rawMessage', message, usrA);
+  }
+  
+  var socket = io();
+  
+// Chat Code Here
+  var usrA = "Grabbing...";
+  var usrB = "Grabbing...";
+  var usrC = "Grabbing...";
+  function sendMsgBtn() {
+    console.log("Sender> Trying to send data...");
+    
+    ////
+    var getterV = firebase.database().ref('users/' + firebase.auth().currentUser.uid + '/username');
+    getterV.on('value', function(snapshot) {
+      usrA = snapshot.val();
+    });
+    ////
+    var getterVV = firebase.database().ref('users/' + firebase.auth().currentUser.uid + '/playerrank');
+    getterVV.on('value', function(snapshot) {
+      usrB = snapshot.val();
+    });
+    var getterVVV = firebase.database().ref('users/' + firebase.auth().currentUser.uid + '/banned');
+    getterVVV.on('value', function(snapshot) {
+      usrC = snapshot.val();
+    });
+    ///
+    if(usrA == "NotFound" || usrB == "NotFound") {
+      socket.emit('chat message', $('#m').val(), "%GettingFromDataStore%", "%GettingFromDataStore%", myChannel);
+      $('#m').val('');
+    }
+    else {
+      socket.emit('chat message', $('#m').val(), usrA, usrB, myChannel);
+      $('#m').val('');
+    }
+  }
+  //$('#messages').append($('<li>').text("Cannot Send Message: You are banned from this server."));
+  socket.on('messageSend', function(msg, channel) {
+    console.log("Messages> Successfully recived message. Checking if you are in the channel to see it..");
+    if(channel == myChannel) {
+      console.log("Messages> You are! sending it to you...");
+      $('#messages').append($('<li>').text(msg));
+    }
+    else {
+      console.log("Messages> You are not. Doing nothing...");
+      return;
+    }
+  });
+
+
+function doNothing() {
+    //do stuff
+}
+  
+  function changeName() {
+    var nameGiven = document.getElementById('name-change').value
+    var user = firebase.auth().currentUser.uid;
+    if(nameGiven == null || nameGiven == "") {
+      alert("Names> You need to specify a name to set!");
+      return;
+    }
+   var GetterName = firebase.database().ref('users/' + firebase.auth().currentUser.uid + '/username');
+    GetterName.on('value', function(snapshot) {
+      GetterOutName = snapshot.val();
+    });
+   var GetterEnabled = firebase.database().ref('users/' + firebase.auth().currentUser.uid + '/enabled');
+    GetterEnabled.on('value', function(snapshot) {
+      GetterOutEnabled = snapshot.val();
+    });
+   var GetterRank = firebase.database().ref('users/' + firebase.auth().currentUser.uid + '/playerrank');
+    GetterRank.on('value', function(snapshot) {
+      GetterOutRank = snapshot.val();
+    });
+   var GetterID = firebase.database().ref('users/' + firebase.auth().currentUser.uid + '/userid');
+    GetterID.on('value', function(snapshot) {
+      GetterOutID = snapshot.val();
+    });
+   var GetterBan = firebase.database().ref('users/' + firebase.auth().currentUser.uid + '/banned');
+    GetterBan.on('value', function(snapshot) {
+      GetterOutBan = snapshot.val();
+    });
+    
+    // Saved the old copies of all the data for the user
+    
+	firebase.database().ref('users/' + user).set({
+		username: nameGiven,
+		playerrank: GetterOutRank,
+		enabled: GetterOutEnabled,
+		userid: GetterOutID,
+    banned: GetterOutBan
+	});
+    alert("Names> Successfully set your account name to " + nameGiven + "!");
+  }
+//-->
+  
+  
+  
+
+
+window.setInterval(function(){
+  if(firebase.auth().currentUser == null) {
+    $('#messages').empty();
+  }
+}, 500);
+</script>
+<div class="demo-layout mdl-layout mdl-js-layout mdl-layout--fixed-header">
+
+  <!-- Header section containing title -->
+  <header class="mdl-layout__header mdl-color-text--white mdl-color--light-blue-700">
+    <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid">
+      <div class="mdl-layout__header-row mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--8-col-desktop">
+      </div>
+    </div>
+  </header>
+
+  <main class="mdl-layout__content mdl-color--grey-100">
+    <div class="mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-grid">
+
+      <!-- Container for the demo -->
+      <div class="mdl-card mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-cell--12-col-tablet mdl-cell--12-col-desktop">
+        <div class="mdl-card__title mdl-color--light-blue-600 mdl-color-text--white">
+          <h2 class="mdl-card__title-text">AngusBeef Chat Login</h2>
+		  
+		      <button id="chat-logout-btn" class="mdl-button mdl-js-button mdl-button--raised" onclick="signUserOut();">Log Out</button>
+        </div>
+		<!-- Put Main Chat Code Here! -->
+		<div id="chat-core">
+			    <div class="heading">
+            <h3 id="main-header"></h3>
+          Change your Name -)<input id="name-change" autocomplete="off" /><button class="changeButton" onclick="changeName()">Change Name</button><br>
+            <input id="channel-change" autocomplete="off" /><button class="changeChannelButton" onclick="changeChannel()">Change Channel</button>
+            <button class="changeButton" onclick="$('#messages').empty();">Clear Chat</button>
+			  <!--<button class="clearButton" onclick="clearChat()">Clear Chat</button>-->
+			</div>
+			
+			<ul id="messages"></ul>
+			<form class="message-input" onsubmit="sendMsgBtn(); return false;">
+			  <input id="m" class="messageInput" autocomplete="off" />
+			</form>
+      <button onclick="sendMsgBtn();" id="snd-btn">Send</button>
+		</div>
+        <div id="auth-area" class="mdl-card__supporting-text mdl-color-text--grey-600">
+          <p>Enter an email and password below and either sign in to an existing account or sign up</p>
+
+          <input class="mdl-textfield__input" style="display:inline;width:auto;" type="text" id="email" name="email" placeholder="Email"/>
+          &nbsp;&nbsp;&nbsp;
+          <input class="mdl-textfield__input" style="display:inline;width:auto;" type="password" id="password" name="password" placeholder="Password"/>
+          <br/><br/>
+          <button disabled class="mdl-button mdl-js-button mdl-button--raised" id="quickstart-sign-in" name="signin">Sign In</button>
+          &nbsp;&nbsp;&nbsp;
+          <button class="mdl-button mdl-js-button mdl-button--raised" id="quickstart-sign-up" name="signup">Sign Up</button>
+          &nbsp;&nbsp;&nbsp;
+          <button class="mdl-button mdl-js-button mdl-button--raised" disabled id="quickstart-verify-email" name="verify-email">Send Email Verification</button>
+          &nbsp;&nbsp;&nbsp;
+          <button class="mdl-button mdl-js-button mdl-button--raised" id="quickstart-password-reset" name="verify-email">Send Password Reset Email</button>
+
+          <!-- Container where we'll display the user details -->
+          <div class="quickstart-user-details-container">
+            Firebase sign-in status: <span id="quickstart-sign-in-status">Unknown</span>
+            <div>Firebase auth <code>currentUser</code> object value:</div>
+            <pre><code id="quickstart-account-details">null</code></pre>
+          </div>
+          
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- Place for Custom Client Code -->
+<script>
+
+function setUserData(user, name, rank, enabledD, bannedD) {
+	firebase.database().ref('users/' + user).set({
+		username: name,
+		playerrank: rank,
+		enabled: enabledD,
+		userid: user,
+    banned: bannedD
+	});
+}
+
+// Now for the useful stuff
+
+function grabUserData(user, what) {
+	var getter = firebase.database().ref('users/' + user + '/' + what);
+	getter.on('value', function(snapshot) {
+	  return snapshot.val();
+	});
+}
+
+function setValue(a, b) {
+	if(a == "a") {
+		var valueA = b;
+	}
+	if(a == "b") {
+		var valueB = b;
+	}
+}
+
+var accountF;
+var accountB;
+
+function setupUserData(user) {
+	console.log("Database> Setting up database for new user...");
+	setUserData(user, "User", "Player", "yes", false);
+}
+
+
+var database = firebase.database();
+
+</script>
+  
+ 
+</body>
+</html>
