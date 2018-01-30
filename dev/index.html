@@ -1,0 +1,127 @@
+<!doctype html>
+<html>
+  <head>
+    <title>AngusBeef Chat</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font: 13px Helvetica, Arial; }
+      form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
+      form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
+      form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
+      #messages { list-style-type: none; margin: 0; padding-bottom: 50px; }
+      #messages li { padding: 10px 10px; }
+      #messages li:nth-child(odd) { background: #eee; }
+    </style>
+    
+    <style>
+      body {
+        position: relative;
+      }
+      .header {
+        background-color: rgb(188, 229, 255);
+        position: fixed;
+      }
+      .changeButton {
+        position: fixed;
+      }
+      .message-input {
+        resize: vertical;
+        overflow: auto;
+      }
+    </style>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3mobile.css">
+  </head>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    var getUsername;
+    
+    var getOnlineClients = setInterval(function() {
+      socket.on('postOnlineClients', function(grabOnline) {
+        var onlineClients = grabOnline;
+        document.getElementById('headerPost').innerHTML = "AngusBeef Chat - Build 0.9 - Online: " + onlineClients + " - My Name: " + getUsername;
+      });
+    }, 1000);
+    var myId;
+    var socket = io();
+    getUsername = prompt("What name should we call you?");
+    while(getUsername == null) {
+      getUsername = prompt("What name should we call you?");
+    }
+    grabRanks(getUsername);
+    
+    function grabRanks(rankedUser) {
+      return "No Rank";
+    }
+  </script>
+  <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+  <script>
+  $(function () {
+    var socket = io();
+    $('form').submit(function(){
+      // Check for any commands
+      if($('#m').val() == "/help") {
+        runCommand("help");
+        return false;
+      }
+      socket.emit('chat message', $('#m').val(), getUsername, grabRanks(getUsername));
+      $('#m').val('');
+      return false;
+    });
+    socket.on('chat message', function(msg, getUsername, tag){
+      $('#messages').append($('<li>').text(msg));
+    });
+  });
+  socket.on('systemMessage', function(sender, message) {
+    
+  });
+</script>
+  <!-- Some stuff that I wrote -->
+<script>
+  function dispatchCommand(command) {
+    socket.emit('command', command);
+  }
+  socket.on('banned', function(username) {
+    if(username == getUsername) {
+      $('#messages').append($('<li>').text("[System]: Shh! You are currently Muted!"));
+      socket.emit('consoleAlert', "User '" + getUsername + "' just tried to talk, but is muted!");
+    }
+  });
+  socket.on('disabled', function() {
+    $('#messages').append($('<li>').text("[System]: Shh! The Chat is Currently Disabled!"));
+    socket.emit('consoleAlert', "User '" + getUsername + "' just tried to talk, but chat is disabled!");
+  });
+  socket.on('muted', function(username) {
+    if(username == getUsername) {
+      $('#messages').append($('<li>').text("[System]: Shh! That Word is Blacklisted here!"));
+      socket.emit('consoleAlert', "User '" + getUsername + "' just tried to swear in chat!");
+    }
+    else {
+      return;
+    }
+  });
+  
+  function changeName() {
+    getUsername = prompt("What name should we call you?");
+  }
+  function runCommand(cmd) {
+    if(cmd == "help") {
+      $('#messages').append($('<li>').text("===== Commands List ====="));
+      $('#messages').append($('<li>').text("/help - Get Commands list"));
+      $('#messages').append($('<li>').text("/updaterank <User> <Rank> - Update a user's rank"));
+    }
+    else {
+      return;
+    }
+  }
+  </script>
+  <body>
+    <h3 class="header" id="headerPost"></h3><br><br><button class="changeButton" onclick="changeName()">Change Name</button>
+    <br><br>
+    <ul id="messages"></ul>
+    <form class="message-input" action="">
+      <input id="m" autocomplete="off" /><button>Send</button>
+    </form>
+  </body>
+</html>
